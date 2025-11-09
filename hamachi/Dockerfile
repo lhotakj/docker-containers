@@ -1,35 +1,35 @@
-FROM phusion/baseimage:0.9.11
-MAINTAINER gfjardim <gfjardim@gmail.com>
-ENV DEBIAN_FRONTEND noninteractive
+FROM phusion/baseimage:jammy-1.0.0
+
+LABEL maintainer="gfjardim <gfjardim@gmail.com>"
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV HOME=/root
+
+ARG HAMACHI_VERSION=2.1.0.203
+ARG HAMACHI_DL_URL=https://vpn.net/linux/hamachi-${HAMACHI_VERSION}-x64.tgz
+
 ADD sources.list /etc/apt/sources.list
 
-# Set correct environment variables
-ENV HOME /root
-
-# Use baseimage-docker's init system
 CMD ["/sbin/my_init"]
 
-# Fix a Debianism of the nobody's uid being 65534
 RUN usermod -u 99 nobody && \
     usermod -g 100 nobody
 
 RUN apt-get update -q
 
-# Install Hamachi
-ADD https://secure.logmein.com/labs/logmein-hamachi-2.1.0.119-x64.tgz /tmp/hamachi.tgz
-RUN mkdir -p /opt/logmein-hamachi
-RUN tar -zxf /tmp/hamachi.tgz --strip-components 1 -C /opt/logmein-hamachi
-RUN ln -sf /opt/logmein-hamachi/hamachid /usr/bin/hamachi
-RUN rm /tmp/hamachi.tgz
+# Install latest Hamachi CLI
+ADD ${HAMACHI_DL_URL} /tmp/hamachi.tgz
+RUN mkdir -p /opt/logmein-hamachi && \
+    tar -zxf /tmp/hamachi.tgz --strip-components 1 -C /opt/logmein-hamachi && \
+    ln -sf /opt/logmein-hamachi/hamachid /usr/bin/hamachi && \
+    rm /tmp/hamachi.tgz
 
 VOLUME /config
 
-# Add install.sh to execute during container startup
 RUN mkdir -p /etc/my_init.d
 ADD install.sh /etc/my_init.d/install.sh
 RUN chmod +x /etc/my_init.d/install.sh
 
-# Add hamachi.sh to runit
-RUN mkdir /etc/service/hamachi
+RUN mkdir -p /etc/service/hamachi
 ADD hamachi.sh /etc/service/hamachi/run
 RUN chmod +x /etc/service/hamachi/run
